@@ -343,10 +343,10 @@ main() {
 
     local _distfile="me3-linux-amd64.tar.gz"
     say "downloading $_distfile"
-    downloader "https://github.com/garyttierney/me3/releases/download/$me3_version/me3-linux-amd64.tar.gz" "$_dir/$_distfile"
+    downloader "https://github.com/Syswisen/steamless-me3/releases/download/$me3_version/me3-linux-amd64.tar.gz" "$_dir/$_distfile"
 
     if check_cmd gh; then
-        ensure gh attestation verify --owner garyttierney "$_dir/$_distfile" >/dev/null
+        ensure gh attestation verify --owner Syswisen "$_dir/$_distfile" >/dev/null
         say "successfully verified $_distfile"
     fi
 
