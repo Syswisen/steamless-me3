@@ -4,7 +4,7 @@
 !include Integration.nsh
 
 !define PRODUCT "garyttierney\me3"
-!define PRODUCT_URL "https://github.com/garyttierney/me3"
+!define PRODUCT_URL "https://github.com/Syswisen/steamless-me3"
 
 !define MUI_ICON "distribution/assets/me3.ico"
 
@@ -102,24 +102,17 @@ ShowInstDetails "show"
 ShowUninstDetails "show"
 
 Var UNINSTALL_REG_KEY
-Var TelemetryEnabled
-Var Dialog
-Var Label
-Var Checkbox
-Var Text
 
 
 Function .onInit
     ; Set the uninstall registry key path here
     StrCpy $UNINSTALL_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\me3"
-    StrCpy $TelemetryEnabled "${BST_CHECKED}"
 FunctionEnd
 
 Function onFinish
   ExecShell "open" "$LOCALAPPDATA\garyttierney\me3\config\profiles"
 FunctionEnd
 
-Page custom nsDialogsPage nsDialogsPageLeave
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
 !define MUI_FINISHPAGE_SHOWREADME "https://me3.readthedocs.io/"
@@ -132,32 +125,6 @@ Page custom nsDialogsPage nsDialogsPageLeave
 !insertmacro MUI_UNPAGE_INSTFILES
 !insertmacro MUI_LANGUAGE English
 
-Function nsDialogsPage
-  !insertmacro MUI_HEADER_TEXT "me3 Configuration" "Configure me3 system-wide settings"
-
-	nsDialogs::Create 1018
-	Pop $Dialog
-
-	${If} $Dialog == error
-		Abort
-	${EndIf}
-
-	${NSD_CreateCheckbox} 0 30u 100% 10u "Share crash reports with me3 developers?"
-	Pop $Checkbox
-
-	${NSD_CreateLabel} 0 0 100% 64u "me3 will upload crash reports to Sentry.io to alert the developers of frequent issues and help with triaging bug reports. This telemetry contains information about interactions with the me3 tool and the mods being loaded."
-	Pop $Label
-
-	${If} $TelemetryEnabled == ${BST_CHECKED}
-		${NSD_Check} $Checkbox
-	${EndIf}
-
-	nsDialogs::Show
-FunctionEnd
-
-Function nsDialogsPageLeave
-	${NSD_GetState} $Checkbox $TelemetryEnabled
-FunctionEnd
 
 !macro CreateInternetShortcutWithIcon FILEPATH URL ICONPATH
 WriteINIStr "${FILEPATH}" "InternetShortcut" "URL" "${URL}"
@@ -215,15 +182,6 @@ Section "Main Application" SEC01
 
     !insertmacro APP_ASSOCIATE_ADDVERB "me3.mod-profile" "open-with-diagnostics" "Open with me3 (diagnostics)" \
       "$INSTDIR\bin\me3.exe launch --diagnostics --auto-detect -p $\"%1$\""
-
-    IfFileExists "$INSTDIR\config\me3.toml" file_found file_not_found
-file_found:
-    goto end
-file_not_found:
-    ${If} $TelemetryEnabled == ${BST_CHECKED}
-      File /oname=config\me3.toml "support/config-dist.toml"
-    ${EndIf}
-end:
 SectionEnd
 
 Section "Uninstall"
