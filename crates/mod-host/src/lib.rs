@@ -20,13 +20,11 @@ use me3_launcher_attach_protocol::{
 };
 use me3_mod_host_assets::mapping::ArchiveOverrideMapping;
 use me3_telemetry::TelemetryConfig;
-use tracing::{error, info, Span};
+use tracing::{info};
 
-use crate::{debugger::suspend_for_debugger, deferred::defer_until_init, host::ModHost};
+use crate::{host::ModHost};
 
 mod asset_hooks;
-mod debugger;
-mod deferred;
 mod detour;
 mod host;
 mod native;
@@ -40,10 +38,6 @@ const DLL_PROCESS_ATTACH: u32 = 1;
 
 dll_syringe::payload_procedure! {
     fn me_attach(request: AttachRequest) -> AttachResult {
-        if request.config.suspend {
-            suspend_for_debugger();
-        }
-
         on_attach(request)
     }
 }
@@ -136,34 +130,10 @@ fn on_attach(request: AttachRequest) -> AttachResult {
         let override_mapping = Arc::new(override_mapping);
 
         info!("Host successfully attached");
-
-        defer_until_init({
-            let current_span = Span::current();
-            let override_mapping = override_mapping.clone();
-
-            move || {
-                let _span_guard = current_span.enter();
-
-                for native in natives {
-                    let mut host = ModHost::get_attached_mut();
-                    if let Err(e) = host.load_native(&native.path, native.initializer) {
-                        error!(
-                            error = &*e,
-                            "failed to load native mod from {:?}", &native.path
-                        )
-                    }
-                }
-
-                if let Err(e) = asset_hooks::attach_override(game, override_mapping) {
-                    error!(
-                        "error" = &*e,
-                        "failed to attach asset override hooks; no files will be overridden"
-                    )
-                }
-            }
-        })?;
-
-        info!("Deferred asset override hooks");
+		
+        asset_hooks::attach_override(game, override_mapping.clone())?;
+		
+        info!("Applied asset override hooks");
 
         Ok(Attachment)
     })?;
